@@ -1,0 +1,129 @@
+{
+    "name": "ReflexOps – Core Reflection Loop",
+    "nodes": [
+        {
+            "id": "WebhookTrigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ],
+            "parameters": {
+                "path": "reflexops-trigger",
+                "httpMethod": "POST",
+                "responseMode": "onReceived"
+            }
+        },
+        {
+            "id": "ContextAssembly",
+            "name": "Context Assembly (core-fast)",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3,
+            "position": [
+                500,
+                300
+            ],
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "name": "model",
+                            "value": "core-fast",
+                            "type": "string"
+                        },
+                        {
+                            "name": "prompt",
+                            "value": "=Analyze this event: {{$json.body}}",
+                            "type": "string"
+                        },
+                        {
+                            "name": "stream",
+                            "value": false,
+                            "type": "boolean"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "AIRouter",
+            "name": "AI Router (Ollama)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                780,
+                300
+            ],
+            "parameters": {
+                "url": "http://ollama:11434/api/generate",
+                "method": "POST",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{$json}}",
+                "options": {
+                    "timeout": 60000
+                }
+            }
+        },
+        {
+            "id": "InspectOutput",
+            "name": "Inspect Output",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3,
+            "position": [
+                1040,
+                300
+            ],
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "name": "ai_response",
+                            "value": "={{$json.response}}",
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Context Assembly (core-fast)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Context Assembly (core-fast)": {
+            "main": [
+                [
+                    {
+                        "node": "AI Router (Ollama)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Router (Ollama)": {
+            "main": [
+                [
+                    {
+                        "node": "Inspect Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {},
+    "active": true
+}
